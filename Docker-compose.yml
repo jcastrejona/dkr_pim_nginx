@@ -1,0 +1,79 @@
+version: "3.3"
+
+services:
+  #Database
+  mariadb:
+    image: mariadb:latest
+    environment:
+      - MYSQL_ROOT_PASSWORD=admin123
+      - MYSQL_DATABASE=pimcore_db
+    deploy:
+      resources:
+        limits:
+          cpus: "0.2"
+          memory: 1000M
+        reservations:
+          cpus: "0.1"
+          memory: 500M
+    command:
+      [
+        "mysqld",
+        "--character-set-server=utf8mb4",
+        "--collation-server=utf8mb4_unicode_ci",
+      ]
+    networks:
+      - pimnet
+    ports:
+      - 3306:3306
+
+  #PHP FPM
+  pimcore:
+    image: pimcore:latest
+    environment:
+      - DB_HOST=mariadb
+      - DB_PORT=3306
+    deploy:
+      resources:
+        limits:
+          cpus: "0.8"
+          memory: 4000M
+        reservations:
+          cpus: "0.1"
+          memory: 2000M
+    networks:
+      - pimnet
+    depends_on:
+      - mariadb
+    volumes:
+      - /c/Users/jose.castrejon/Documents/dkr_pim_nginx/dkr_pim_nginx/sourceCode/pimcore/:/var/www/html/
+      - /c/Users/jose.castrejon/Documents/dkr_pim_nginx/dkr_pim_nginx/configServices/php/www.conf:/usr/local/etc/php-fpm.d/www.conf
+
+  #Reverse proxy
+  nginx:
+    image: nginx:latest
+    depends_on:
+      - pimcore
+      - mariadb
+    deploy:
+      resources:
+        limits:
+          cpus: "0.2"
+          memory: 1000M
+        reservations:
+          cpus: "0.1"
+          memory: 500M
+    networks:
+      - pimnet
+    ports:
+      - 80:80
+    volumes:
+      - /c/Users/jose.castrejon/Documents/dkr_pim_nginx/dkr_pim_nginx/sourceCode/cache/:/usr/share/nginx/cache
+      - /c/Users/jose.castrejon/Documents/dkr_pim_nginx/dkr_pim_nginx/configServices/nginx/:/etc/nginx/conf.d
+      - /c/Users/jose.castrejon/Documents/dkr_pim_nginx/dkr_pim_nginx/sourceCode/pimcore/:/var/www/html/
+
+networks:
+  pimnet:
+    driver: overlay
+    ipam:
+      config:
+        - subnet: 192.168.1.0/24
