@@ -1,0 +1,8 @@
+pimcore_install:
+    parameters:
+        database_credentials:
+            user:                 root
+            password:             admin123
+            dbname:               pimcore_db
+            host:                 mariadb
+            port:                 3306
